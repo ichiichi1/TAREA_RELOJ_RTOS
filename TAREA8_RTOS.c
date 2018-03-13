@@ -46,6 +46,7 @@
 #include "task.h"
 #include "semphr.h"
 #include "event_groups.h"
+#include "queue.h"
 /* TODO: insert other include files here. */
 
 #define EVENT_60_SECONDS (1<<0)
@@ -56,6 +57,7 @@
 
 EventGroupHandle_t g_time_events;
 
+
 void seconds_task(void *arg)
 {
 	   TickType_t xLastWakeTime;
@@ -63,7 +65,8 @@ void seconds_task(void *arg)
 		const TickType_t xPeriod = pdMS_TO_TICKS( 1000 );
 		xLastWakeTime = xTaskGetTickCount();
 
-	    uint8_t seconds = 58;
+	    uint8_t *seconds = 0;
+	    seconds = pvPortMalloc(sizeof(seconds));
 
 		for(;;)
 		{
@@ -72,15 +75,21 @@ void seconds_task(void *arg)
 			if(60 == seconds)
 			{
 				seconds = 0;
+				xQueueSend(,&seconds,portMAX_DELAYy);
 				xEventGroupSetBits(g_time_events,EVENT_60_SECONDS);
 			}
+			else
+			{
+			xQueueSend(,&seconds,portMAX_DELAYy);
 			xEventGroupSetBits(g_time_events,EVENT_ALARM);
+			}
 		}
 }
 
 void minutes_task(void *arg)
 {
-	uint8_t minutes = 59;
+	uint8_t *minutes = 0;
+	minutes = pvPortMalloc(sizeof(minutes));
 		for(;;)
 		{
 			xEventGroupWaitBits(g_time_events, EVENT_60_SECONDS, pdTRUE, pdTRUE, portMAX_DELAY);
@@ -88,17 +97,23 @@ void minutes_task(void *arg)
 			if(60 == minutes)
 			{
 				minutes = 0;
+				xQueueSend(,&minutes,portMAX_DELAYy);
 				xEventGroupSetBits(g_time_events,EVENT_60_MINUTES);
 
 			}
+			else
+			{
+			xQueueSend(,&minutes,portMAX_DELAYy);
 			xEventGroupSetBits(g_time_events,EVENT_ALARM);
+			}
 		}
 }
 
 void hours_task(void *arg)
 {
 
-	    uint8_t hours = 22;
+	    uint8_t *hours = 0;
+	    hours = pvPortMalloc(sizeof(hours));
 		for(;;)
 		{
 			xEventGroupWaitBits(g_time_events, EVENT_60_MINUTES, pdTRUE, pdTRUE, portMAX_DELAY);
@@ -106,19 +121,42 @@ void hours_task(void *arg)
 			if(24 == hours)
 			{
 				hours = 0;
+				xQueueSend(,&hours,portMAX_DELAYy);
 				xEventGroupSetBits(g_time_events,EVENT_ALARM);
 			}
+			else
+			{
+			xQueueSend(,&hours,portMAX_DELAYy);
 			xEventGroupSetBits(g_time_events,EVENT_ALARM);
+			}
 		}
 }
 
 void alarm_task(void *arg)
 {
+	uint8_t *alarm;
+
+
+	alarm = pvPortMalloc(sizeof(alarm));
 	for(;;)
 	{
 	xEventGroupWaitBits(g_time_events, EVENT_ALARM, pdTRUE, pdTRUE, portMAX_DELAY);
 
-	xEventGroupSetBits(g_time_events,EVENT_PRINT);
+	 if( == xQueueReceive(, &message ,portMAX_DELAY) &&  == == xQueueReceive(, &message ,portMAX_DELAY)
+			              &&  == xQueueReceive(, &message ,portMAX_DELAY))
+	 {
+		 alarm = 1;
+		 xQueueSend(,&alarm,portMAX_DELAYy);
+		 xEventGroupSetBits(g_time_events,EVENT_PRINT);
+	 }
+	 else
+	 {
+		 alarm = 0;
+		 xQueueSend(,&alarm,portMAX_DELAYy);
+		 xEventGroupSetBits(g_time_events,EVENT_PRINT);
+	 }
+
+
 
 	}
 }
@@ -127,7 +165,9 @@ void print_task(void *arg)
 {
 	for(;;)
 		{
-
+		uint8_t sec = xQueueReceive(, &message ,portMAX_DELAY);
+		uint8_t min = xQueueReceive(, &message ,portMAX_DELAY);
+		uint8_t hrs = xQueueReceive(, &message ,portMAX_DELAY);
 		}
 }
 
